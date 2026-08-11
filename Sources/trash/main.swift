@@ -59,6 +59,18 @@ func trash(_ urls: [URL]) {
 	}
 }
 
+func emptyTrash() throws {
+	CLI.revertSudo()
+
+	try runAppleScript("""
+	tell application "Finder"
+		if (count items of trash) > 0 then
+			empty trash
+		end if
+	end tell
+	""")
+}
+
 /// FileManager.trashItem has a macOS bug where only the first file gets Put Back metadata.
 /// This ensures all trashed files have ptbN/ptbL records in .DS_Store.
 func writeMissingPutBackRecords(for trashedFiles: [TrashedFile]) {
@@ -137,10 +149,16 @@ func extractPaths(from arguments: some Collection<String>) -> [String] {
 
 switch argument {
 case "--help", "-h":
-	print("Usage: trash [--help | -h] [--version | -v] [--interactive | -i] <path> […]")
+	print("Usage: trash [--help | -h] [--version | -v] [--interactive | -i] [--empty] <path> […]")
 	exit(0)
 case "--version", "-v":
 	print(VERSION)
+	exit(0)
+case "--empty":
+	CLI.tryOrExit {
+		try emptyTrash()
+	}
+
 	exit(0)
 case "--interactive", "-i":
 	var trashedFiles = [TrashedFile]()
